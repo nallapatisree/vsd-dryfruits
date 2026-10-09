@@ -1,0 +1,15 @@
+{
+  "name": "vsd-dryfruits",
+  "version": "0.1.0",
+  "private": true,
+  "description": "VSD \u2013 Venkata Sai Dry Fruits: store + admin + API",
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node server/test.js",
+    "format": "npx prettier --write \"js/**/*.js\" \"css/**/*.css\" \"server/*.js\""
+  },
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22.5"
+  }
+}

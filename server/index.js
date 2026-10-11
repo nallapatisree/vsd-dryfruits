@@ -48,7 +48,7 @@ const getOrder = no => { const r = db.prepare('SELECT j FROM orders WHERE no=?')
 const saveOrder = o => db.prepare('INSERT INTO orders(no,created,phone,j) VALUES(?,?,?,?) ON CONFLICT(no) DO UPDATE SET j=excluded.j').run(o.no, o.d, o.phone, JSON.stringify(o));
 /** Customers only get a capped stock number; the real quantity is admin-only. */
 const publicCatalog = c => { const { log, ...r } = JSON.parse(JSON.stringify(c)); r.prods.forEach(p => p.v.forEach(v => { v.s = Math.min(v.s, 50); })); return r; };
-const clean = (s, n = 200) => String(s ?? '').replace(/[<>"'`]/g, '').trim().slice(0, n);
+const clean = (s, n = 200) => String(s ?? '').replace(/[<>"`]/g, '').trim().slice(0, n);
 
 /* ---------- orders ---------- */
 /** Resolve one cart line to its real name, price and the stock rows it consumes. */
@@ -56,7 +56,9 @@ function lineOf(c, x, activeOnly) {
   const q = Number(x.q);
   if (!Number.isInteger(q) || q < 1 || q > 500) throw E('Invalid quantity');
   if (x.t === 'p') {
-    const p = c.prods.find(p => p.id == x.id), v = p && p.v[x.vi];
+        const p = c.prods.find(p => p.id == x.id), vi = Number(x.vi);
+    if (!Number.isInteger(vi) || vi < 0) throw E('Invalid item');
+    const v = p && p.v[vi];
     if (!v || (activeOnly && !p.on)) throw E('A product in your cart is no longer available');
     return { n: p.n + ' ' + v.w, c: p.c, price: v.p, q, use: [[v, q]] };
   }
@@ -167,7 +169,10 @@ async function handleApi(req, res, u) {
   }
   if (m !== 'GET') {
     if (!/application\/json/.test(req.headers['content-type'] || '')) throw E('Unsupported content type', 415);
-    if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) throw E('Bad origin', 403);
+       if (req.headers.origin) {
+      let oh = null; try { oh = new URL(req.headers.origin).host; } catch { /* bad Origin header */ }
+      if (oh !== req.headers.host) throw E('Bad origin', 403);
+    }
   }
   const b = m === 'GET' ? {} : await readBody(req, p === '/api/admin/upload' ? 6e6 : 2e6);
   if (m === 'POST' && p === '/api/orders') { if (limited('o' + ipOf(req), 20, 3600e3)) throw E('Too many orders, try later', 429); return { order: createOrder(b) }; }
@@ -207,7 +212,8 @@ http.createServer(async (req, res) => {
   try {
     const u = new URL(req.url, 'http://localhost');
     if (u.pathname.startsWith('/api/')) return send(res, 200, await handleApi(req, res, u));
-    if (req.method === 'GET' && serveStatic(res, decodeURIComponent(u.pathname))) return;
+       let rel; try { rel = decodeURIComponent(u.pathname); } catch { return send(res, 404, { error: 'Not found' }); }
+    if (req.method === 'GET' && serveStatic(res, rel)) return;
     send(res, 404, { error: 'Not found' });
   } catch (e) {
     if (!e.http) console.error(e);

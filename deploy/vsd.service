@@ -1,0 +1,14 @@
+# /etc/systemd/system/vsd.service   (Linux server – see docs/CLIENT_SETUP_GUIDE.md)
+[Unit]
+Description=VSD Venkata Sai Dry Fruits website
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/vsd
+EnvironmentFile=/etc/vsd.env
+ExecStart=/usr/bin/node server/index.js
+Restart=always
+User=vsd
+
+[Install]
+WantedBy=multi-user.target

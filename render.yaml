@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: vsd-dryfruits
+    runtime: node
+    plan: starter
+    buildCommand: ""
+    startCommand: npm start
+    disk:
+      name: vsd-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DATA_DIR
+        value: /var/data
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "1"
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASSWORD
+        generateValue: true
